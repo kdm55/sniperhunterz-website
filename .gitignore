@@ -1,0 +1,5 @@
+node_modules/
+.env
+data/display-state.json
+data/.persistence-probe
+*.log

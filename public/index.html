@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="SniperHunterz — live trading intelligence dashboard synced from the Stoploss Hunterz scanner." />
+  <title>SniperHunterz | Stoploss Hunterz</title>
+  <link rel="icon" href="/assets/logo-stoploss-hunterz.png" type="image/png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=8" />
+  <link rel="stylesheet" href="/css/premium.css?v=3" />
+</head>
+<body>
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="bg-glow bg-glow-a" aria-hidden="true"></div>
+  <div class="bg-glow bg-glow-b" aria-hidden="true"></div>
+
+  <header class="topbar panel-neon">
+    <a href="/" class="brand">
+      <img src="/assets/logo-stoploss-hunterz.png" alt="Stoploss Hunterz" class="brand-logo" width="120" height="40" />
+      <div class="logo-ring brand-logo-fallback" aria-hidden="true">
+        <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="18" stroke="currentColor" stroke-width="1"/><path d="M24 10v28M10 24h28" stroke="currentColor" stroke-width="1.2" opacity=".6"/><circle cx="24" cy="24" r="5" fill="currentColor"/></svg>
+      </div>
+      <div class="brand-text">
+        <h1>SniperHunterz</h1>
+        <p class="tagline">Trading intelligence</p>
+      </div>
+    </a>
+    <button type="button" class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">☰</button>
+    <nav class="nav" id="mainNav">
+      <a href="/" data-route="/">Dashboard</a>
+      <a href="/top-coins" data-route="/top-coins">Top 10</a>
+      <a href="/ideas" data-route="/ideas">Ideas</a>
+      <a href="/progress" data-route="/progress">Progress</a>
+      <a href="/history" data-route="/history">History</a>
+      <a href="/stats" data-route="/stats">Stats</a>
+    </nav>
+    <div class="sync-meta" id="headerChips">
+      <span class="chip" id="regimeChip">Regime —</span>
+      <span class="chip muted" id="scannerChip">Scanner —</span>
+      <span class="chip muted" id="approvedChip">Approved —</span>
+      <span class="chip muted" id="syncChip">Sync —</span>
+    </div>
+  </header>
+
+  <div id="staleBanner" class="stale-banner hidden" role="status"></div>
+
+  <div id="apiStatusBox" class="api-status-box hidden" role="status" aria-live="polite"></div>
+
+  <main id="app" class="main">
+    <div class="loading-shell glass-card">
+      <div class="loading-pulse"></div>
+      <p>Loading dashboard…</p>
+    </div>
+  </main>
+
+  <footer class="footer panel-neon">
+    <div id="debugPanel" class="debug-panel hidden" aria-label="Debug (hidden)"></div>
+    <p class="nfa"><strong>Not financial advice.</strong> Crypto trading involves substantial risk. Past performance does not guarantee future results. Watchlist and monitor tiers are scanner intelligence — not live trade alerts unless marked TRADE SIGNAL (9.5+).</p>
+    <p class="muted">Data syncs from the operator&apos;s private scanner; delays may occur. <a href="/debug-payload" class="debug-link">Debug</a></p>
+  </footer>
+
+  <script src="/js/api.js?v=6"></script>
+  <script src="/js/coins.js?v=6"></script>
+  <script src="/js/terminal.js?v=6"></script>
+  <script src="/js/premium.js?v=2"></script>
+  <script src="/js/ui.js?v=9"></script>
+  <script src="/js/app.js?v=10"></script>
+  <script>
+    document.getElementById("navToggle")?.addEventListener("click", function () {
+      const nav = document.getElementById("mainNav");
+      const open = nav.classList.toggle("open");
+      this.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+  </script>
+</body>
+</html>
