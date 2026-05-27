@@ -60,6 +60,13 @@ function fmtFunding(rate) {
 
 function tierLabel(c) {
   if (c.display_label) return c.display_label;
+  if (c.eligible_for_trade === true || c.final_decision === "TRADE_CREATED" || c.final_decision === "WOULD_TRADE") {
+    return "TRADE READY";
+  }
+  if (c.final_decision === "BLOCKED" || c.status === "blocked" || c.approved === false) {
+    const score = Number(c.approved_score ?? c.score ?? 0);
+    if (score >= 9.5) return "HIGH WATCHLIST";
+  }
   const score = Number(c.approved_score ?? c.score ?? 0);
   if (score >= 9.5) return "TRADE READY";
   if (score >= 9.0) return "HIGH WATCHLIST";

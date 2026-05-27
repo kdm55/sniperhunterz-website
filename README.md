@@ -72,7 +72,7 @@ $env:SNIPER_WEBSITE_SYNC_URL = "http://localhost:3000/api/display-sync"
 $env:SNIPER_WEBSITE_API_SECRET = "same-secret-as-website-.env"
 ```
 
-Production URL: `https://sniperhunterz.com/api/display-sync`
+Production: `https://www.sniperhunterz.com/` · sync API: `https://www.sniperhunterz.com/api/display-sync`
 
 ### Refresh local website data without HTTP
 

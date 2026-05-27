@@ -142,12 +142,27 @@
     else if (r.includes("CHOP")) level = 42;
     else if (r.includes("BEAR")) level = 22;
     if (regime?.no_trade) level = Math.min(level, 28);
-    return `<div class="viz-card glass">
+    const btcVal = Number.isFinite(btc) ? `${btc >= 0 ? "+" : ""}${btc.toFixed(2)}%` : "—";
+    const oiVal = Number.isFinite(oi) ? `${oi >= 0 ? "+" : ""}${oi.toFixed(1)}%` : "—";
+    const btcCls = Number.isFinite(btc) && btc < 0 ? "down" : Number.isFinite(btc) && btc > 0 ? "up" : "";
+    const oiCls = Number.isFinite(oi) && oi < 0 ? "down" : Number.isFinite(oi) && oi > 0 ? "up" : "";
+    return `<div class="viz-card glass viz-card-regime">
       <label class="viz-title">Regime meter</label>
-      <div class="regime-meter"><div class="regime-meter-fill" style="width:${level}%"></div></div>
-      <div class="viz-meta"><span class="chip ${regime?.no_trade ? "warn" : "ok"}">${esc(r)}</span>
-      <span class="muted">BTC 24h ${Number.isFinite(btc) ? btc.toFixed(2) + "%" : "—"} · OI 4h ${Number.isFinite(oi) ? oi.toFixed(1) + "%" : "—"}</span></div>
-      ${Number.isFinite(squeeze) ? pctBar("Squeeze", Math.min(100, squeeze * 10), "squeeze") : ""}
+      <div class="regime-meter" role="presentation" aria-hidden="true"><div class="regime-meter-fill" style="width:${level}%"></div></div>
+      <div class="regime-regime-row">
+        <span class="chip ${regime?.no_trade ? "warn" : "ok"}">${esc(r)}</span>
+      </div>
+      <div class="regime-stats">
+        <div class="regime-stat">
+          <span class="regime-stat-lbl">BTC 24h</span>
+          <span class="regime-stat-val ${btcCls}">${btcVal}</span>
+        </div>
+        <div class="regime-stat">
+          <span class="regime-stat-lbl">OI 4h</span>
+          <span class="regime-stat-val ${oiCls}">${oiVal}</span>
+        </div>
+      </div>
+      ${Number.isFinite(squeeze) ? `<div class="regime-squeeze">${pctBar("Squeeze", Math.min(100, squeeze * 10), "squeeze")}</div>` : ""}
     </div>`;
   }
 
