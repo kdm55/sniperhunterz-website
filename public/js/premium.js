@@ -132,26 +132,50 @@
     return `<div class="viz-bar-row"><span class="viz-bar-lbl">${esc(label)}</span><div class="viz-bar-track"><div class="viz-bar-fill ${cls || ""}" style="width:${v}%"></div></div><span class="viz-bar-val">${v.toFixed(0)}%</span></div>`;
   }
 
-  function regimeMeter(regime) {
-    const r = (regime?.regime || "—").toUpperCase();
-    const btc = Number(regime?.btc_change_24h);
-    const oi = Number(regime?.btc_oi_change_4h);
-    const squeeze = Number(regime?.market_squeeze_pct ?? regime?.squeeze);
+  function regimeMeter(regime, coins, scan) {
+    const merged = { ...(regime || {}) };
+    const scanSq = scan?.market_squeeze_pct;
+    if (merged.market_squeeze_pct == null && scanSq != null) {
+      merged.market_squeeze_pct = scanSq;
+    }
+    const r = (merged.regime || "—").toUpperCase();
+    const btc = Number(merged.btc_change_24h);
+    const oi = Number(merged.btc_oi_change_4h);
+    const squeeze = Number(merged.market_squeeze_pct ?? merged.squeeze);
     let level = 50;
-    if (r.includes("BULL")) level = 78;
-    else if (r.includes("CHOP")) level = 42;
+    if (r.includes("RISK_ON") || r.includes("RISK ON")) level = 72;
+    else if (r.includes("CHOPPY") || r.includes("CHOP")) level = 42;
+    else if (r.includes("RISK_OFF") || r.includes("RISK OFF")) level = 28;
+    else if (r.includes("NO_TRADE") || r.includes("NO TRADE")) level = 12;
+    else if (r.includes("BULL")) level = 78;
     else if (r.includes("BEAR")) level = 22;
-    if (regime?.no_trade) level = Math.min(level, 28);
+    if (merged.no_trade) level = Math.min(level, 12);
     const btcVal = Number.isFinite(btc) ? `${btc >= 0 ? "+" : ""}${btc.toFixed(2)}%` : "—";
     const oiVal = Number.isFinite(oi) ? `${oi >= 0 ? "+" : ""}${oi.toFixed(1)}%` : "—";
     const btcCls = Number.isFinite(btc) && btc < 0 ? "down" : Number.isFinite(btc) && btc > 0 ? "up" : "";
     const oiCls = Number.isFinite(oi) && oi < 0 ? "down" : Number.isFinite(oi) && oi > 0 ? "up" : "";
+    let expl = String(merged.regime_explanation || "").trim();
+    if (!expl && Array.isArray(merged.regime_reasons) && merged.regime_reasons.length) {
+      expl = merged.regime_reasons.join(" · ");
+    }
+    if (!expl && Array.isArray(merged.reasons) && merged.reasons.length) {
+      expl = merged.reasons.join(" · ");
+    }
+    const explHtml = expl
+      ? `<p class="regime-explanation muted">${esc(expl)}</p>`
+      : "";
+    const squeezeBar =
+      Number.isFinite(squeeze) || squeeze === 0
+        ? `<div class="regime-squeeze">${pctBar("Squeeze", Math.min(100, Math.max(0, squeeze)), "squeeze")}<span class="viz-foot muted">${squeeze.toFixed(1)}% market participation</span></div>`
+        : "";
     return `<div class="viz-card glass viz-card-regime">
       <label class="viz-title">Regime meter</label>
       <div class="regime-meter" role="presentation" aria-hidden="true"><div class="regime-meter-fill" style="width:${level}%"></div></div>
       <div class="regime-regime-row">
-        <span class="chip ${regime?.no_trade ? "warn" : "ok"}">${esc(r)}</span>
+        <span class="chip ${merged.no_trade ? "warn" : "ok"}">${esc(r)}</span>
+        ${merged.macro_caution_active ? `<span class="chip warn" title="Shadow-only label">MACRO_CAUTION</span>` : ""}
       </div>
+      ${explHtml}
       <div class="regime-stats">
         <div class="regime-stat">
           <span class="regime-stat-lbl">BTC 24h</span>
@@ -162,7 +186,7 @@
           <span class="regime-stat-val ${oiCls}">${oiVal}</span>
         </div>
       </div>
-      ${Number.isFinite(squeeze) ? `<div class="regime-squeeze">${pctBar("Squeeze", Math.min(100, squeeze * 10), "squeeze")}</div>` : ""}
+      ${squeezeBar}
     </div>`;
   }
 
@@ -292,7 +316,7 @@
     const coins = p.top_coins || [];
     const stats = p.stats || p.analytics?.trade_stats || {};
     const perf = p.performance || p.analytics || {};
-    return `<div class="viz-grid">${regimeMeter(p.regime)}${marketBreadth(coins)}${oiDominance(coins)}${fundingHeat(coins)}${winrateMini(stats, perf)}${tpDistribution(stats, perf)}</div>${scannerHeatmap(coins)}`;
+    return `<div class="viz-grid">${regimeMeter(p.regime, coins, p.latest_scan || p.scan)}${marketBreadth(coins)}${oiDominance(coins)}${fundingHeat(coins)}${winrateMini(stats, perf)}${tpDistribution(stats, perf)}</div>${scannerHeatmap(coins)}`;
   }
 
   function prefsBarHtml() {

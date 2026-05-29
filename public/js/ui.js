@@ -131,10 +131,10 @@ function outcomePill(outcome) {
 function coinAvatar(coin) {
   const key = Coins.symbolKey(coin);
   const initials = Coins.coinInitials(coin);
-  const url = Coins.coinLogoUrl(coin);
+  const img = Coins.coinLogoImgTag(coin);
   return `<div class="coin-avatar" title="${esc(key)}">
     <span class="coin-initials">${esc(initials)}</span>
-    <img src="${esc(url)}" alt="" loading="lazy" onerror="this.remove()" />
+    ${img}
   </div>`;
 }
 

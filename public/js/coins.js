@@ -1,4 +1,4 @@
-/** Coin symbol → logo URL + initials fallback (display-safe). */
+/** Coin symbol → logo URL + initials (scan payload + multi-CDN fallbacks). */
 
 const COIN_LOGO_URLS = {
   BTC: "https://assets.coingecko.com/coins/images/1/small/bitcoin.png",
@@ -27,6 +27,20 @@ const COIN_LOGO_URLS = {
   WIF: "https://assets.coingecko.com/coins/images/33566/small/dogwifhat.jpg",
   BONK: "https://assets.coingecko.com/coins/images/28600/small/bonk.jpg",
   HMSTR: "https://assets.coingecko.com/coins/images/40094/small/hamster_kombat_logo.jpg",
+  SPACE: "https://assets.coingecko.com/coins/images/50882/small/hamster-kombat.jpeg",
+};
+
+const SYMBOL_ALIASES = {
+  "1000PEPE": "PEPE",
+  "1000BONK": "BONK",
+  "1000FLOKI": "FLOKI",
+  "1000SHIB": "SHIB",
+  "1000SATS": "SATS",
+  "1000RATS": "RATS",
+  "1000LUNC": "LUNC",
+  "1000XEC": "XEC",
+  "1000CAT": "CAT",
+  "1000WHY": "WHY",
 };
 
 function symbolKey(coin) {
@@ -39,21 +53,84 @@ function symbolKey(coin) {
     .trim();
 }
 
-function coinLogoUrl(coin) {
+function displayKey(coin) {
   const key = symbolKey(coin);
-  if (COIN_LOGO_URLS[key]) return COIN_LOGO_URLS[key];
+  return SYMBOL_ALIASES[key] || key;
+}
+
+function logoUrlCandidates(coin) {
+  const out = [];
+  const add = (url) => {
+    const u = String(url || "").trim();
+    if (u && out.indexOf(u) === -1) out.push(u);
+  };
+  add(coin.coin_logo_url || coin.logo_url);
+  const key = displayKey(coin);
+  add(COIN_LOGO_URLS[key]);
   const slug = key.toLowerCase();
-  return `https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/${slug}.png`;
+  if (slug) {
+    add(`https://assets.coincap.io/assets/icons/${slug}@2x.png`);
+    add(
+      `https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/${slug}.png`
+    );
+    add(
+      `https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/icon/${slug}.png`
+    );
+  }
+  return out;
+}
+
+function coinLogoUrl(coin) {
+  const urls = logoUrlCandidates(coin);
+  return urls[0] || "";
 }
 
 function coinInitials(coin) {
-  const key = symbolKey(coin);
+  const key = displayKey(coin);
   return key.slice(0, 2) || "?";
+}
+
+function _logoImgError(img) {
+  const raw = img.getAttribute("data-logo-fallbacks");
+  if (!raw) {
+    img.remove();
+    return;
+  }
+  let rest;
+  try {
+    rest = JSON.parse(decodeURIComponent(raw));
+  } catch (_e) {
+    img.remove();
+    return;
+  }
+  if (!Array.isArray(rest) || !rest.length) {
+    img.remove();
+    return;
+  }
+  const next = rest.shift();
+  img.setAttribute("data-logo-fallbacks", encodeURIComponent(JSON.stringify(rest)));
+  img.src = next;
+}
+
+function coinLogoImgTag(coin) {
+  const urls = logoUrlCandidates(coin);
+  if (!urls.length) return "";
+  const [first, ...rest] = urls;
+  const safeSrc = String(first).replace(/"/g, "&quot;");
+  const fb = rest.length
+    ? ` data-logo-fallbacks="${encodeURIComponent(JSON.stringify(rest))}"`
+    : "";
+  return `<img src="${safeSrc}" alt="" loading="lazy"${fb} onerror="window.Coins&&Coins._logoImgError(this)"/>`;
 }
 
 window.Coins = {
   symbolKey,
+  displayKey,
   coinLogoUrl,
+  logoUrlCandidates,
   coinInitials,
+  coinLogoImgTag,
+  _logoImgError,
   COIN_LOGO_URLS,
+  SYMBOL_ALIASES,
 };
