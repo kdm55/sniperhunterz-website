@@ -90,13 +90,41 @@ function coinReasonLine(c) {
   return c.reason_line || c.note || c.rejection_reason || c.rejection_message || c.status || "—";
 }
 
+function cornixDeliveryUi(t) {
+  const status = String(t?.cornix_delivery_status || "").toLowerCase();
+  const label = t?.cornix_delivery_label || null;
+  const open = ["active", "pending", "tp1_hit"].includes(
+    String(t?.outcome || t?.status || "").toLowerCase()
+  );
+  const sent = t?.cornix_sent === true || status === "sent";
+  const blocked = [
+    "waiting_for_entry",
+    "entry_missed",
+    "entry_expired",
+    "cornix_pending",
+    "cornix_failed",
+  ].includes(status);
+  return {
+    status,
+    label,
+    reason: t?.cornix_delivery_reason || "",
+    sent,
+    blocked: blocked && open && !sent,
+    showLive: open && sent && !blocked,
+  };
+}
+
 function tradeLifecycleStatus(t) {
+  const delivery = cornixDeliveryUi(t);
+  if (delivery.blocked && delivery.label) return delivery.label;
   const o = (t.outcome || t.status || "").toLowerCase();
   if (o === "tp2_hit") return "TP2 HIT";
   if (o === "tp1_hit") return "TP1 HIT";
   if (t.breakeven || t.protected || o === "tp1_then_sl") return "PROTECTED";
   if (o === "sl_hit") return "SL HIT";
-  if (o === "active" || o === "pending") return "ENTERED";
+  if (o === "active" || o === "pending") {
+    return delivery.sent ? "ENTERED" : "Cornix Pending";
+  }
   return (o || "MONITOR").toUpperCase();
 }
 
@@ -112,14 +140,34 @@ function setupBadge(tag) {
   return `<span class="badge badge-setup">${esc(tag || "—")}</span>`;
 }
 
-function tradeStatusPill(outcome) {
-  const o = (outcome || "").toLowerCase();
+function tradeStatusPill(t) {
+  const row = typeof t === "object" && t !== null ? t : { outcome: t };
+  const delivery = cornixDeliveryUi(row);
+  if (delivery.blocked && delivery.label) {
+    const cls =
+      delivery.status === "entry_missed" || delivery.status === "entry_expired"
+        ? "pill-bad"
+        : "pill-wait";
+    return `<span class="pill ${cls}">${esc(delivery.label)}</span>`;
+  }
+  const o = (row.outcome || row.status || "").toLowerCase();
   if (o === "tp1_hit") return '<span class="pill pill-tp1">TP1 HIT</span>';
-  if (o === "active" || o === "pending") return '<span class="pill pill-entered">ENTERED</span>';
+  if (o === "active" || o === "pending") {
+    if (delivery.sent) return '<span class="pill pill-entered">ENTERED</span>';
+    return '<span class="pill pill-wait">Cornix Pending</span>';
+  }
   return '<span class="pill pill-wait">MONITOR</span>';
 }
 
-function outcomePill(outcome) {
+function outcomePill(outcome, t) {
+  const delivery = t ? cornixDeliveryUi(t) : null;
+  if (delivery?.blocked && delivery.label) {
+    const cls =
+      delivery.status === "entry_missed" || delivery.status === "entry_expired"
+        ? "pill-sl"
+        : "pill-wait";
+    return `<span class="pill ${cls}">${esc(delivery.label)}</span>`;
+  }
   const o = outcome || "";
   if (o === "tp2_hit") return '<span class="pill pill-tp2">TP2</span>';
   if (o === "sl_hit") return '<span class="pill pill-sl">SL</span>';
@@ -257,7 +305,8 @@ function tradeCard(t) {
   const pnlCls = pnl != null && pnl >= 0 ? "up" : "down";
   const progLabel = t.progress_label || (t.tp1_hit ? "TP1 → TP2" : "Entry → TP1");
   const o = (t.outcome || t.status || "").toLowerCase();
-  const isLive = o === "active" || o === "pending";
+  const delivery = cornixDeliveryUi(t);
+  const isLive = delivery.showLive;
   const isProt = t.breakeven || t.protected || o === "tp1_then_sl";
   const protectedTxt = isProt
     ? '<span class="pill pill-prot shield-badge">Protected / BE</span>'
@@ -270,6 +319,9 @@ function tradeCard(t) {
     o === "tp1_hit" ? "tp1-hit" : "",
     isProt ? "protected-state" : "",
     o === "sl_hit" ? "sl-hit" : "",
+    delivery.status === "waiting_for_entry" ? "entry-wait" : "",
+    delivery.status === "entry_missed" ? "entry-missed" : "",
+    delivery.status === "entry_expired" ? "entry-expired" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -281,7 +333,7 @@ function tradeCard(t) {
       ${coinAvatar(t)}
       <div>
         <strong>${liveDot}${tradeLink(t)}${tvBtn}</strong>
-        <div class="trade-pills"><span class="pill pill-life">${esc(life)}</span> ${tradeStatusPill(t.outcome)} ${outcomePill(t.outcome)} ${protectedTxt}</div>
+        <div class="trade-pills"><span class="pill pill-life">${esc(life)}</span> ${tradeStatusPill(t)} ${outcomePill(t.outcome, t)} ${protectedTxt}</div>
       </div>
       <div class="trade-pnl-stack ${pnlCls}">
         <div class="trade-pnl pnl-live">${pnl != null ? fmtPct(pnl) : "—"} <small>raw</small></div>
@@ -294,7 +346,7 @@ function tradeCard(t) {
       <div class="price-track-now">Now ${fmtPrice(t.current_price)} · ${pct.toFixed(0)}% toward TP2</div>
       <div class="price-track"><div class="price-track-fill" style="width:${pct}%"></div><div class="price-marker" style="left:${pct}%"></div></div>
     </div>
-    <p class="trade-foot muted">${esc(t.sl_status || "")}${t.last_updated_at ? ` · Updated ${fmtTime(t.last_updated_at)}` : ""}</p>
+    <p class="trade-foot muted">${esc(delivery.reason || t.sl_status || "")}${t.last_updated_at || t.last_monitored_at ? ` · Updated ${fmtTime(t.last_updated_at || t.last_monitored_at)}` : ""}</p>
   </article>`;
 }
 
